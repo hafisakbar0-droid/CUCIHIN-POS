@@ -511,7 +511,7 @@
                 <input id="new-sv-name" type="text" placeholder="Nama Layanan (cth: Reglue Sol)" class="px-3 py-2 rounded-xl border border-slate-300 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#1e3375]" />
                 <input id="new-sv-desc" type="text" placeholder="Deskripsi singkat" class="px-3 py-2 rounded-xl border border-slate-300 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#1e3375]" />
                 <input id="new-sv-price" type="number" min="0" step="5000" placeholder="Harga (Rp)" class="px-3 py-2 rounded-xl border border-slate-300 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#1e3375]" />
-                <input id="new-sv-days" type="number" min="1" placeholder="Estimasi Hari (cth: 2)" class="px-3 py-2 rounded-xl border border-slate-300 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#1e3375]" />
+                <input id="new-sv-days" type="number" min="0" placeholder="Estimasi Hari (0 jika add-on)" class="px-3 py-2 rounded-xl border border-slate-300 text-xs font-medium focus:outline-none focus:ring-2 focus:ring-[#1e3375]" />
               </div>
               <button type="button" id="btn-add-service" class="px-4 py-2.5 rounded-xl bg-brand hover:bg-brand-dark text-white text-xs font-bold transition">
                 + Tambah Layanan
@@ -847,7 +847,7 @@
       { key: "selesai", label: "Selesai / Diambil", desc: "Sepatu telah diserahkan kembali ke customer" }
     ];
 
-    const STORAGE_KEY = "cucihin_pos_v2";
+    const STORAGE_KEY = "cucihin_pos_v3";
 
     function todayISO() {
       const d = new Date();
@@ -887,12 +887,13 @@
           address: "Jl. Outlet CUCIHIN Shoe Cleaning No. 12, Jakarta"
         },
         services: [
-          { id: "fast", name: "Fast Clean", price: 25000, days: 1, desc: "Upper & midsole, bersih cepat" },
-          { id: "deep", name: "Deep Clean", price: 45000, days: 3, desc: "Cuci menyeluruh luar, dalam & tali" },
-          { id: "unyellow", name: "Unyellowing", price: 60000, days: 3, desc: "Hilangkan oksidasi kuning midsole" },
-          { id: "suede", name: "Suede / Nubuck Care", price: 55000, days: 3, desc: "Treatment khusus bahan sensitif" },
-          { id: "repaint", name: "Repaint / Recolor", price: 120000, days: 5, desc: "Cat ulang upper atau midsole" },
-          { id: "waterproof", name: "Waterproof Coating", price: 20000, days: 1, desc: "Lapisan anti air & debu (add-on)" }
+          { id: "dc_normal", name: "Deep Clean (Normal)", price: 40000, days: 3, desc: "Cuci menyeluruh luar, dalam & tali (noda normal)" },
+          { id: "dc_hard", name: "Deep Clean (Hard)", price: 45000, days: 3, desc: "Cuci menyeluruh ekstra noda membandel / lumpur tebal" },
+          { id: "fc_normal", name: "Fast Clean (Normal)", price: 55000, days: 1, desc: "Pembersihan cepat upper & midsole (noda ringan)" },
+          { id: "fc_hard", name: "Fast Clean (Hard)", price: 60000, days: 1, desc: "Pembersihan kilat noda membandel / hard express" },
+          { id: "add_white", name: "Additional Cost Warna Putih", price: 5000, days: 0, desc: "Tambahan treatment khusus sepatu warna putih" },
+          { id: "glue", name: "Lem Sepatu", price: 20000, days: 2, desc: "Reglue / rekatkan sol sepatu yang lepas & pres kuat" },
+          { id: "unyellow", name: "Unyellowing", price: 60000, days: 3, desc: "Treatment oksidasi kuning midsole kembali cerah" }
         ],
         orders: [
           {
@@ -904,7 +905,7 @@
             shoe: "Nike Air Force 1 Low",
             color: "Putih / Leather",
             notes: "Noda lumpur di upper & midsole agak menguning",
-            serviceIds: ["deep", "unyellow"],
+            serviceIds: ["dc_normal", "unyellow", "add_white"],
             total: 105000,
             paidAmount: 105000,
             payStatus: "lunas",
@@ -928,7 +929,7 @@
             shoe: "New Balance 530",
             color: "Cream Silver / Mesh",
             notes: "Bagian mesh depan berdebu, tali perlu direndam",
-            serviceIds: ["deep"],
+            serviceIds: ["dc_hard"],
             total: 45000,
             paidAmount: 20000,
             payStatus: "dp",
@@ -950,9 +951,9 @@
             shoe: "Vans Old Skool",
             color: "Hitam Putih / Canvas",
             notes: "Midsole kotor pemakaian hujan",
-            serviceIds: ["fast", "waterproof"],
-            total: 45000,
-            paidAmount: 45000,
+            serviceIds: ["fc_normal"],
+            total: 55000,
+            paidAmount: 55000,
             payStatus: "lunas",
             payMethod: "Tunai",
             status: "qc",
@@ -972,9 +973,9 @@
             phone: "081934561122",
             shoe: "Adidas Samba OG",
             color: "Putih Suede Abu",
-            notes: "Hati-hati bagian suede depan jangan terlalu basah",
-            serviceIds: ["suede"],
-            total: 55000,
+            notes: "Bagian pinggir sol mulai terbuka sedikit",
+            serviceIds: ["glue"],
+            total: 20000,
             paidAmount: 0,
             payStatus: "belum",
             payMethod: "-",
@@ -1002,6 +1003,9 @@
         if (parsed && Array.isArray(parsed.orders) && Array.isArray(parsed.expenses) && Array.isArray(parsed.services)) {
           state = parsed;
         }
+      } else {
+        try { localStorage.removeItem("cucihin_pos_v2"); } catch (err) {}
+        persistState();
       }
     } catch (e) {}
 
@@ -1016,7 +1020,7 @@
     // ==================== UI TRANSIENT STATE ====================
     let currentRole = null; // null | 'admin' | 'worker' | 'customer'
     let activeTab = "pos";
-    let posSelectedServices = ["deep"];
+    let posSelectedServices = ["dc_normal"];
     let posPayStatus = "lunas";
     let posPayMethod = "QRIS";
     let posBeforeDataUrl = "";
@@ -1419,7 +1423,7 @@
             </div>
             <div class="flex items-center justify-between mt-2.5 pt-2 border-t border-slate-100">
               <span class="text-xs font-extrabold text-[#1e3375]">${formatRupiah(s.price)}</span>
-              <span class="text-[11px] font-medium text-slate-400">Est. ${s.days} hari</span>
+              <span class="text-[11px] font-medium text-slate-400">${s.days > 0 ? `Est. ${s.days} hari` : 'Add-on'}</span>
             </div>
           </button>
         `;
@@ -1964,7 +1968,7 @@
           </div>
           <div class="flex items-center gap-2 shrink-0">
             <input type="number" step="5000" min="0" value="${s.price}" data-edit-price="${s.id}" class="w-24 px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-bold text-[#1e3375] bg-white" />
-            <input type="number" min="1" value="${s.days}" data-edit-days="${s.id}" class="w-14 px-2 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 bg-white" title="Estimasi hari" />
+            <input type="number" min="0" value="${s.days}" data-edit-days="${s.id}" class="w-14 px-2 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 bg-white" title="Estimasi hari (0 jika add-on)" />
             <button type="button" data-del-service="${s.id}" class="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 transition" title="Hapus layanan">
               <i data-lucide="trash-2" class="w-4 h-4"></i>
             </button>
@@ -2353,7 +2357,7 @@
         if (daysId) {
           const sv = state.services.find((s) => s.id === daysId);
           if (sv) {
-            sv.days = Math.max(1, Number(e.target.value) || 1);
+            sv.days = Math.max(0, Number(e.target.value) || 0);
             persistState();
             showToast(`Estimasi ${sv.name} diperbarui.`);
           }
@@ -2379,7 +2383,7 @@
         const name = document.getElementById("new-sv-name").value.trim();
         const desc = document.getElementById("new-sv-desc").value.trim() || "Perawatan sepatu CUCIHIN";
         const price = Number(document.getElementById("new-sv-price").value) || 0;
-        const days = Math.max(1, Number(document.getElementById("new-sv-days").value) || 2);
+        const days = Math.max(0, Number(document.getElementById("new-sv-days").value) || 0);
         if (!name || price <= 0) {
           showToast("Isi nama layanan dan harga dengan benar.");
           return;
