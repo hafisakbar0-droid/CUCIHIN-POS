@@ -847,7 +847,17 @@
       { key: "selesai", label: "Selesai / Diambil", desc: "Sepatu telah diserahkan kembali ke customer" }
     ];
 
-    const STORAGE_KEY = "cucihin_pos_v4";
+    const STORAGE_KEY = "cucihin_pos_v2026_clean";
+
+    const TARGET_SERVICES = [
+      { id: "dc_normal", name: "Deep Clean (Normal)", price: 40000, days: 3, desc: "Cuci menyeluruh luar, dalam & tali (3 hari)" },
+      { id: "dc_hard", name: "Deep Clean (Hard)", price: 45000, days: 3, desc: "Cuci menyeluruh ekstra noda membandel / lumpur (3 hari)" },
+      { id: "fc_normal", name: "Fast Clean (Normal)", price: 55000, days: 1, desc: "Pembersihan cepat upper & midsole (1 hari)" },
+      { id: "fc_hard", name: "Fast Clean (Hard)", price: 60000, days: 1, desc: "Pembersihan kilat ekstra noda membandel (1 hari)" },
+      { id: "add_white", name: "Additional Cost Warna Putih", price: 5000, days: 0, desc: "Tambahan treatment khusus sepatu warna putih" },
+      { id: "glue", name: "Lem Sepatu", price: 20000, days: 2, desc: "Reglue sol lepas & pres kuat (2 hari)" },
+      { id: "unyellow", name: "Unyellowing", price: 60000, days: 3, desc: "Treatment oksidasi midsole kuning (3 hari)" }
+    ];
 
     function todayISO() {
       const d = new Date();
@@ -877,7 +887,6 @@
 
     // ==================== INITIAL STATE ====================
     function getDefaultState() {
-      const today = todayISO();
       return {
         store: {
           name: "CUCIHIN",
@@ -886,15 +895,7 @@
           gasUrl: "",
           address: "Jl. Outlet CUCIHIN Shoe Cleaning No. 12, Jakarta"
         },
-        services: [
-          { id: "dc_normal", name: "Deep Clean (Normal)", price: 40000, days: 3, desc: "Cuci menyeluruh luar, dalam & tali (noda normal)" },
-          { id: "dc_hard", name: "Deep Clean (Hard)", price: 45000, days: 3, desc: "Cuci menyeluruh ekstra noda membandel / lumpur tebal" },
-          { id: "fc_normal", name: "Fast Clean (Normal)", price: 55000, days: 1, desc: "Pembersihan cepat upper & midsole (noda ringan)" },
-          { id: "fc_hard", name: "Fast Clean (Hard)", price: 60000, days: 1, desc: "Pembersihan kilat noda membandel / hard express" },
-          { id: "add_white", name: "Additional Cost Warna Putih", price: 5000, days: 0, desc: "Tambahan treatment khusus sepatu warna putih" },
-          { id: "glue", name: "Lem Sepatu", price: 20000, days: 2, desc: "Reglue / rekatkan sol sepatu yang lepas & pres kuat" },
-          { id: "unyellow", name: "Unyellowing", price: 60000, days: 3, desc: "Treatment oksidasi kuning midsole kembali cerah" }
-        ],
+        services: [...TARGET_SERVICES],
         orders: [],
         expenses: []
       };
@@ -902,24 +903,28 @@
 
     let state = getDefaultState();
     try {
+      ["cucihin_pos_v1", "cucihin_pos_v2", "cucihin_pos_v3", "cucihin_pos_v4"].forEach((k) => {
+        try { localStorage.removeItem(k); } catch (e) {}
+      });
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed && Array.isArray(parsed.orders) && Array.isArray(parsed.expenses) && Array.isArray(parsed.services)) {
+        if (parsed && Array.isArray(parsed.orders) && Array.isArray(parsed.expenses)) {
           state = parsed;
         }
-      } else {
-        try { localStorage.removeItem("cucihin_pos_v2"); localStorage.removeItem("cucihin_pos_v3"); } catch (err) {}
-        persistState();
       }
     } catch (e) {}
 
-    // Auto-purge legacy demo data from browser storage if present
+    // Selalu pastikan 7 layanan target aktif sesuai instruksi owner
+    state.services = [...TARGET_SERVICES];
+
+    // Selalu pastikan data demo lama bersih total
     if (state.orders && state.orders.some((o) => o.id === "CH-2611-001" || o.customer === "Raka Pratama")) {
       state.orders = [];
       state.expenses = [];
-      persistState();
     }
+
+    persistState();
 
     function persistState() {
       try {
