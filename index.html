@@ -914,6 +914,13 @@
       }
     } catch (e) {}
 
+    // Auto-purge legacy demo data from browser storage if present
+    if (state.orders && state.orders.some((o) => o.id === "CH-2611-001" || o.customer === "Raka Pratama")) {
+      state.orders = [];
+      state.expenses = [];
+      persistState();
+    }
+
     function persistState() {
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
